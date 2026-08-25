@@ -67,10 +67,10 @@ export const TaskDetailPopover: React.FC<TaskDetailPopoverProps> = ({
     : format(parseISO(todo.created_at), "EEEE, dd/MM/yyyy", { locale: vi });
 
   return (
-    /* Non-blocking wrapper: pointer-events-none allows full interaction with the calendar behind! */
-    <div className="fixed inset-0 z-40 pointer-events-none flex items-center justify-center p-4 animate-fade-in">
-      {/* Popover Card: pointer-events-auto enables interaction within the card */}
-      <div className="pointer-events-auto relative w-full max-w-[460px] bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] ring-1 ring-slate-900/5 dark:ring-white/10 overflow-hidden animate-scale-up">
+    /* Non-blocking wrapper positioned on the side */
+    <div className="fixed inset-0 z-40 pointer-events-none">
+      {/* Side-Docked Detail Card: Positioned on the right side beside the calendar */}
+      <div className="pointer-events-auto absolute right-4 sm:right-8 top-20 sm:top-24 w-[420px] max-w-[calc(100vw-32px)] max-h-[calc(100vh-120px)] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-[0_25px_60px_rgba(0,0,0,0.22)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-1 ring-slate-900/10 dark:ring-white/10 animate-scale-up">
         
         {/* Header Row */}
         <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -91,6 +91,7 @@ export const TaskDetailPopover: React.FC<TaskDetailPopoverProps> = ({
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+
 
         {/* 3 Metrics Summary Cards (Compact & Refined) */}
         <div className="grid grid-cols-3 gap-2 my-3.5">
