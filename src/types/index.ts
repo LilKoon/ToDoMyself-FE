@@ -18,6 +18,7 @@ export interface Todo {
   priority: Priority;
   status: Status;
   category: string;
+  start_date?: string | null;
   due_date?: string | null;
   reminder_time?: string | null;
   is_reminder_sent: boolean;
@@ -25,6 +26,7 @@ export interface Todo {
   updated_at: string;
   subtasks: Subtask[];
 }
+
 
 export interface User {
   id: number;

@@ -13,8 +13,9 @@ import { TodoCard } from "@/components/todos/TodoCard";
 import { KanbanBoard } from "@/components/todos/KanbanBoard";
 import { CalendarView } from "@/components/todos/CalendarView";
 import { TaskModal } from "@/components/todos/TaskModal";
-import { TaskDetailDrawer } from "@/components/todos/TaskDetailDrawer";
+import { TaskDetailPopover } from "@/components/todos/TaskDetailPopover";
 import { Toast, ToastType } from "@/components/common/Toast";
+
 
 import {
   Plus,
@@ -315,8 +316,8 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* Task Detail Side-Over Drawer */}
-      <TaskDetailDrawer
+      {/* Task Detail Floating Popover (Matched with design in image 1) */}
+      <TaskDetailPopover
         isOpen={!!selectedTodoForDetail}
         todo={selectedTodoForDetail}
         onClose={() => setSelectedTodoForDetail(null)}
@@ -325,6 +326,7 @@ export default function DashboardPage() {
         onStatusChange={handleStatusChange}
         onToggleSubtask={handleToggleSubtask}
       />
+
 
       {/* Task Create/Edit Modal */}
       <TaskModal

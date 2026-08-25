@@ -40,6 +40,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [priority, setPriority] = useState<Priority>("MEDIUM");
   const [status, setStatus] = useState<Status>(defaultStatus);
   const [category, setCategory] = useState("General");
+  const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [reminderTime, setReminderTime] = useState("");
   const [autoReminder, setAutoReminder] = useState(true);
@@ -55,6 +56,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setPriority(editingTodo.priority);
       setStatus(editingTodo.status);
       setCategory(editingTodo.category || "General");
+
+      if (editingTodo.start_date) {
+        try {
+          const s = parseISO(editingTodo.start_date);
+          setStartDate(format(s, "yyyy-MM-dd'T'HH:mm"));
+        } catch {
+          setStartDate("");
+        }
+      } else {
+        setStartDate("");
+      }
       
       if (editingTodo.due_date) {
         try {
@@ -94,8 +106,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setStatus(defaultStatus);
       setCategory("General");
       if (initialDate) {
-        setDueDate(format(initialDate, "yyyy-MM-dd'T'09:00"));
+        setStartDate(format(initialDate, "yyyy-MM-dd'T'08:00"));
+        setDueDate(format(initialDate, "yyyy-MM-dd'T'17:30"));
       } else {
+        setStartDate("");
         setDueDate("");
       }
       setReminderTime("");
@@ -140,6 +154,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         priority,
         status,
         category: category.trim() || "General",
+        start_date: startDate ? new Date(startDate).toISOString() : null,
         due_date: dueDate ? new Date(dueDate).toISOString() : null,
         reminder_time: reminderTime ? new Date(reminderTime).toISOString() : null,
         subtasks: subtasks.map((s, idx) => ({
@@ -157,6 +172,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setIsSaving(false);
     }
   };
+
 
   const priorities: { id: Priority; label: string; bg: string }[] = [
     { id: "LOW", label: "Thấp", bg: "hover:bg-slate-100 dark:hover:bg-slate-800" },
@@ -284,25 +300,37 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <div className="p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 space-y-4">
             <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-semibold text-xs uppercase tracking-wider">
               <Bell className="w-4 h-4 text-indigo-500" />
-              <span>Cài Đặt Hạn Chót & Tự Động Gửi Email Nhắc Việc</span>
+              <span>Cài Đặt Thời Gian & Tự Động Gửi Email Nhắc Việc</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  📅 Hạn Hoàn Thành (Due Date)
+                  🕒 Bắt Đầu (Start Date)
                 </label>
                 <input
                   type="datetime-local"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  ⏰ Giờ Gửi Email Riêng (Tùy chọn)
+                  🏁 Hạn Chót (Due Date)
+                </label>
+                <input
+                  type="datetime-local"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  ⏰ Hẹn Giờ Gửi Email Riêng
                 </label>
                 <input
                   type="datetime-local"
@@ -311,7 +339,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     setReminderTime(e.target.value);
                     setAutoReminder(false);
                   }}
-                  className="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                 />
               </div>
             </div>
