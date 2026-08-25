@@ -17,7 +17,15 @@ import {
   parseISO,
 } from "date-fns";
 import { vi } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Calendar as CalendarIcon,
+  CheckCircle2,
+  X,
+  Clock,
+} from "lucide-react";
 import { TaskDetailPopover } from "./TaskDetailPopover";
 
 interface CalendarViewProps {
@@ -45,6 +53,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+  const [viewingDayData, setViewingDayData] = useState<{ day: Date; todos: Todo[] } | null>(null);
 
   // When selectedTodo becomes null (e.g. closed), also reset selectedDayIndex
   useEffect(() => {
@@ -64,21 +73,28 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setCurrentMonth(addMonths(currentMonth, 1));
     onCloseDetail();
     setSelectedDayIndex(null);
+    setViewingDayData(null);
   };
   
   const prevMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
     onCloseDetail();
     setSelectedDayIndex(null);
+    setViewingDayData(null);
   };
 
   const goToToday = () => {
     setCurrentMonth(new Date());
     onCloseDetail();
     setSelectedDayIndex(null);
+    setViewingDayData(null);
   };
 
-  const getPriorityStyle = (priority: string) => {
+  const getPriorityStyle = (priority: string, status: Status) => {
+    if (status === "COMPLETED") {
+      return "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30";
+    }
+
     switch (priority) {
       case "URGENT":
         return "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 hover:bg-rose-500/25";
@@ -123,7 +139,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     }
   };
 
-  const isTaskEligibleForCalendar = !!(selectedTodo && (selectedTodo.due_date || selectedTodo.start_date) && selectedDayIndex !== null);
+  const isTaskEligibleForCalendar = !!(
+    selectedTodo &&
+    (selectedTodo.due_date || selectedTodo.start_date) &&
+    selectedDayIndex !== null
+  );
 
   return (
     <div className="relative glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800/80 w-full shadow-lg">
@@ -202,6 +222,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               }
             });
 
+            // Show max 2 tasks in cell, then "+N việc khác..."
+            const visibleTodos = dayTodos.slice(0, 2);
+            const remainingCount = dayTodos.length - 2;
+
             return (
               <div
                 key={idx}
@@ -242,39 +266,144 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   </button>
                 </div>
 
-                {/* Task Chips in Day */}
-                <div className="mt-2 space-y-1.5 flex-1 overflow-y-auto max-h-[105px] scrollbar-thin">
-                  {dayTodos.map((todo) => (
+                {/* Task Chips in Day (Max 2 + Show More) */}
+                <div className="mt-2 space-y-1.5 flex-1 flex flex-col justify-start">
+                  {visibleTodos.map((todo) => {
+                    const isCompleted = todo.status === "COMPLETED";
+
+                    return (
+                      <button
+                        type="button"
+                        key={todo.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDayIndex(idx);
+                          setViewingDayData(null);
+                          onSelectTodo(todo);
+                        }}
+                        className={`w-full text-left px-2 py-1 rounded-xl text-xs font-semibold truncate block transition border ${getPriorityStyle(
+                          todo.priority,
+                          todo.status
+                        )} cursor-pointer ${
+                          selectedTodo?.id === todo.id ? "ring-2 ring-orange-500 scale-[1.02]" : ""
+                        }`}
+                        title={`${todo.title} - Bấm để xem chi tiết`}
+                      >
+                        <div className="flex items-center gap-1">
+                          {isCompleted ? (
+                            <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+                          )}
+                          <span className={`truncate ${isCompleted ? "line-through opacity-80" : ""}`}>
+                            {todo.title}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+
+                  {/* +N việc khác... button */}
+                  {remainingCount > 0 && (
                     <button
                       type="button"
-                      key={todo.id}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedDayIndex(idx);
-                        onSelectTodo(todo);
+                        setViewingDayData({ day, todos: dayTodos });
                       }}
-                      className={`w-full text-left px-2.5 py-1 rounded-xl text-xs font-semibold truncate block transition border ${getPriorityStyle(
-                        todo.priority
-                      )} ${todo.status === "COMPLETED" ? "opacity-50 line-through" : ""} cursor-pointer ${
-                        selectedTodo?.id === todo.id ? "ring-2 ring-orange-500 scale-[1.02]" : ""
-                      }`}
-                      title={`${todo.title} - Bấm để xem chi tiết`}
+                      className="w-full text-center py-1 px-1.5 rounded-lg text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition cursor-pointer border border-indigo-200/50 dark:border-indigo-800/40"
                     >
-                      <div className="flex items-center gap-1">
-                        {todo.status === "COMPLETED" ? (
-                          <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-emerald-500" />
-                        ) : (
-                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
-                        )}
-                        <span className="truncate">{todo.title}</span>
-                      </div>
+                      ••• +{remainingCount} việc khác
                     </button>
-                  ))}
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Floating Overlay Layer: Day Full Task List Popover */}
+        {viewingDayData && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          >
+            <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white capitalize">
+                    Danh Sách Việc {format(viewingDayData.day, "EEEE, dd/MM/yyyy", { locale: vi })}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Tổng cộng {viewingDayData.todos.length} công việc trong ngày này
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewingDayData(null)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                {viewingDayData.todos.map((t) => {
+                  const isCompleted = t.status === "COMPLETED";
+
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => {
+                        setViewingDayData(null);
+                        onSelectTodo(t);
+                      }}
+                      className={`p-2.5 rounded-xl border transition flex items-center justify-between gap-2 cursor-pointer ${
+                        isCompleted
+                          ? "bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-200/50"
+                          : "bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/80 hover:border-indigo-400"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isCompleted ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        ) : (
+                          <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                        )}
+                        <span
+                          className={`text-xs font-bold truncate ${
+                            isCompleted
+                              ? "line-through text-slate-400 dark:text-slate-500"
+                              : "text-slate-900 dark:text-slate-100"
+                          }`}
+                        >
+                          {t.title}
+                        </span>
+                      </div>
+
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 flex-shrink-0">
+                        {t.due_date ? format(parseISO(t.due_date), "HH:mm") : "--:--"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const targetDay = viewingDayData.day;
+                  setViewingDayData(null);
+                  onOpenNewTaskModal("TODO", targetDay);
+                }}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Thêm Công Việc Mới Vào Ngày Này</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Floating Overlay Layer (Out of Grid Flow) for Anchored Detail Popover */}
         {isTaskEligibleForCalendar && (

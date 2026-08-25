@@ -9,12 +9,13 @@ import { todoApi } from "@/services/api";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar, ViewMode } from "@/components/layout/Sidebar";
 import { StatsBanner } from "@/components/todos/StatsBanner";
-import { TodoCard } from "@/components/todos/TodoCard";
+import { GroupedListView } from "@/components/todos/GroupedListView";
 import { KanbanBoard } from "@/components/todos/KanbanBoard";
 import { CalendarView } from "@/components/todos/CalendarView";
 import { TaskModal } from "@/components/todos/TaskModal";
 import { TaskDetailDrawer } from "@/components/todos/TaskDetailDrawer";
 import { Toast, ToastType } from "@/components/common/Toast";
+
 
 
 
@@ -353,46 +354,18 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* View 1: List View */}
+              {/* View 1: Grouped List View (Linear / Notion style) */}
               {viewMode === "list" && (
-                <div className="space-y-3">
-                  {displayTodos.length === 0 ? (
-                    <div className="glass-card rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
-                      <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">
-                        <Inbox className="w-8 h-8" />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                        Không có công việc nào phù hợp
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">
-                        Không tìm thấy công việc nào theo từ khóa hoặc bộ lọc đã chọn. Hãy thử tìm từ khóa khác hoặc bật "Tìm việc quá khứ"!
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery("");
-                          setPriorityFilter("ALL");
-                        }}
-                        className="mt-6 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
-                      >
-                        Đặt lại bộ lọc
-                      </button>
-                    </div>
-                  ) : (
-                    displayTodos.map((todo) => (
-                      <TodoCard
-                        key={todo.id}
-                        todo={todo}
-                        onSelectTodo={(t) => setSelectedTodoForDetail(t)}
-                        onEdit={handleOpenEditModal}
-                        onDelete={handleDeleteTask}
-                        onStatusChange={handleStatusChange}
-                        onToggleSubtask={handleToggleSubtask}
-                      />
-                    ))
-                  )}
-                </div>
+                <GroupedListView
+                  todos={displayTodos}
+                  onSelectTodo={(t) => setSelectedTodoForDetail(t)}
+                  onEdit={handleOpenEditModal}
+                  onDelete={handleDeleteTask}
+                  onStatusChange={handleStatusChange}
+                  onOpenNewTaskModal={() => handleOpenCreateModal("TODO")}
+                />
               )}
+
 
               {/* View 2: Kanban Board View */}
               {viewMode === "kanban" && (
