@@ -113,7 +113,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setUser(res.user);
         setIsLoading(false);
-        window.location.href = "/dashboard";
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 150);
         return true;
       }
       setIsLoading(false);
@@ -139,13 +141,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSetupToken(null);
         setPendingUser(null);
         setIsLoading(false);
-        window.location.href = "/dashboard";
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 150);
       }
     } catch (err) {
       setIsLoading(false);
       throw err;
     }
   };
+
 
   const closePasswordSetupModal = () => {
     setNeedsPasswordSetup(false);

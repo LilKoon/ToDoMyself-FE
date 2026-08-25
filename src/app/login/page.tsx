@@ -91,7 +91,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Google One-Tap / OAuth Button */}
+        {/* Google OAuth Button (Explicitly disable One-Tap overlay) */}
         <div className="mb-6 flex flex-col items-center">
           <div className="w-full flex justify-center">
             <GoogleLogin
@@ -102,6 +102,8 @@ export default function LoginPage() {
               shape="pill"
               text="signin_with"
               locale="vi"
+              useOneTap={false}
+              auto_select={false}
             />
           </div>
           <div className="w-full flex items-center gap-3 my-5">
@@ -110,6 +112,7 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
           </div>
         </div>
+
 
         {/* Email Password Form */}
         <form onSubmit={handleEmailLogin} className="space-y-4">
