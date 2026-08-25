@@ -29,6 +29,10 @@ import {
   Inbox,
   AlertTriangle,
   Clock,
+  Search,
+  History,
+  X,
+  SlidersHorizontal,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -44,6 +48,9 @@ export default function DashboardPage() {
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [includePast, setIncludePast] = useState<boolean>(false);
+  const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
+
 
   // Modal & Drawer states
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -78,7 +85,7 @@ export default function DashboardPage() {
         todoApi.getTodos({
           category: activeCategory !== "All" ? activeCategory : undefined,
           search: searchQuery.trim() ? searchQuery.trim() : undefined,
-          filter_type: activeFilter !== "all" ? activeFilter : undefined,
+          filter_type: includePast ? undefined : (activeFilter !== "all" ? activeFilter : undefined),
         }),
         todoApi.getStats(),
       ]);
@@ -95,8 +102,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, activeCategory, searchQuery, activeFilter]);
-
+  }, [isAuthenticated, activeCategory, searchQuery, activeFilter, includePast]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -130,7 +136,6 @@ export default function DashboardPage() {
     setSelectedTodoForDetail(null);
     fetchData();
   };
-
 
   const handleDeleteTask = async (id: number) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa công việc này?")) {
@@ -167,6 +172,12 @@ export default function DashboardPage() {
       showToast("Không thể cập nhật việc con", "error");
     }
   };
+
+  // Filter todos by priority
+  const displayTodos = todos.filter((t) => {
+    if (priorityFilter !== "ALL" && t.priority !== priorityFilter) return false;
+    return true;
+  });
 
   if (authLoading || (!isAuthenticated && !user)) {
     return (
@@ -208,7 +219,6 @@ export default function DashboardPage() {
             setActiveCategory(cat);
           }}
           stats={
-
             stats
               ? {
                   total: stats.total_todos,
@@ -225,8 +235,8 @@ export default function DashboardPage() {
           {/* Top Metric Stats */}
           <StatsBanner stats={stats} />
 
-          {/* View Toolbar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+          {/* View Header & Title */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {activeFilter === "all"
@@ -241,18 +251,97 @@ export default function DashboardPage() {
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {activeCategory !== "All" ? `Danh mục: ${activeCategory} • ` : ""}
-                Hiển thị {todos.length} công việc
+                Hiển thị {displayTodos.length} công việc
+                {priorityFilter !== "ALL" && ` (Ưu tiên: ${priorityFilter})`}
+                {includePast && " • Đang bật tìm cả việc quá khứ"}
               </p>
             </div>
 
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => handleOpenCreateModal("TODO")}
                 className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-lg shadow-indigo-500/25 transition cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Thêm Công Việc Mới</span>
               </button>
+            </div>
+          </div>
+
+          {/* Dedicated Filter & Search Bar */}
+          <div className="glass-panel p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-sm">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm nhanh theo tên công việc, ghi chú, việc con..."
+                className="w-full pl-9 pr-8 py-2 text-xs font-medium rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                  title="Xóa từ khóa tìm kiếm"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Actions: Past Search Toggle & Priority Filter */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Include Past Tasks Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !includePast;
+                  setIncludePast(next);
+                  if (next) {
+                    setActiveFilter("all");
+                  }
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 cursor-pointer ${
+                  includePast
+                    ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 shadow-xs"
+                    : "bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                }`}
+                title="Bao gồm cả các công việc đã hoàn thành hoặc hủy trong quá khứ khi tìm kiếm"
+              >
+                <History className="w-3.5 h-3.5 text-amber-500" />
+                <span>Tìm việc quá khứ</span>
+                {includePast && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 ml-0.5" />}
+              </button>
+
+              {/* Priority Filter Selector */}
+              <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs">
+                {(["ALL", "URGENT", "HIGH", "MEDIUM", "LOW"] as const).map((pri) => (
+                  <button
+                    type="button"
+                    key={pri}
+                    onClick={() => setPriorityFilter(pri)}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                      priorityFilter === pri
+                        ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    {pri === "ALL"
+                      ? "Tất cả"
+                      : pri === "URGENT"
+                      ? "Khẩn cấp"
+                      : pri === "HIGH"
+                      ? "Cao"
+                      : pri === "MEDIUM"
+                      ? "TB"
+                      : "Thấp"}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -267,26 +356,30 @@ export default function DashboardPage() {
               {/* View 1: List View */}
               {viewMode === "list" && (
                 <div className="space-y-3">
-                  {todos.length === 0 ? (
+                  {displayTodos.length === 0 ? (
                     <div className="glass-card rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
                       <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">
                         <Inbox className="w-8 h-8" />
                       </div>
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                        Không có công việc nào
+                        Không có công việc nào phù hợp
                       </h3>
                       <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">
-                        Hiện tại không có công việc nào trong bộ lọc này. Hãy bấm tạo công việc mới để bắt đầu!
+                        Không tìm thấy công việc nào theo từ khóa hoặc bộ lọc đã chọn. Hãy thử tìm từ khóa khác hoặc bật "Tìm việc quá khứ"!
                       </p>
                       <button
-                        onClick={() => handleOpenCreateModal("TODO")}
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setPriorityFilter("ALL");
+                        }}
                         className="mt-6 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
                       >
-                        + Tạo Công Việc Ngay
+                        Đặt lại bộ lọc
                       </button>
                     </div>
                   ) : (
-                    todos.map((todo) => (
+                    displayTodos.map((todo) => (
                       <TodoCard
                         key={todo.id}
                         todo={todo}
@@ -304,7 +397,7 @@ export default function DashboardPage() {
               {/* View 2: Kanban Board View */}
               {viewMode === "kanban" && (
                 <KanbanBoard
-                  todos={todos}
+                  todos={displayTodos}
                   onSelectTodo={(t) => setSelectedTodoForDetail(t)}
                   onEdit={handleOpenEditModal}
                   onDelete={handleDeleteTask}
@@ -317,7 +410,7 @@ export default function DashboardPage() {
               {/* View 3: Calendar View */}
               {viewMode === "calendar" && (
                 <CalendarView
-                  todos={todos}
+                  todos={displayTodos}
                   selectedTodo={selectedTodoForDetail}
                   onSelectTodo={(t) => setSelectedTodoForDetail(t)}
                   onCloseDetail={() => setSelectedTodoForDetail(null)}
@@ -332,6 +425,7 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+
 
       {/* Task Detail Slide-Over Drawer for List & Kanban views */}
       {viewMode !== "calendar" && (
