@@ -13,8 +13,9 @@ import { TodoCard } from "@/components/todos/TodoCard";
 import { KanbanBoard } from "@/components/todos/KanbanBoard";
 import { CalendarView } from "@/components/todos/CalendarView";
 import { TaskModal } from "@/components/todos/TaskModal";
-import { TaskDetailPopover } from "@/components/todos/TaskDetailPopover";
+import { TaskDetailDrawer } from "@/components/todos/TaskDetailDrawer";
 import { Toast, ToastType } from "@/components/common/Toast";
+
 
 
 import {
@@ -323,20 +324,19 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* Task Detail Floating Popover (Only for List / Kanban views, non-blocking) */}
-      {viewMode !== "calendar" && selectedTodoForDetail && !isTaskModalOpen && (
-        <div className="fixed right-6 top-24 z-40">
-          <TaskDetailPopover
-            isOpen={!!selectedTodoForDetail}
-            todo={selectedTodoForDetail}
-            onClose={() => setSelectedTodoForDetail(null)}
-            onEdit={handleOpenEditModal}
-            onDelete={handleDeleteTask}
-            onStatusChange={handleStatusChange}
-            onToggleSubtask={handleToggleSubtask}
-          />
-        </div>
+      {/* Task Detail Slide-Over Drawer for List & Kanban views */}
+      {viewMode !== "calendar" && (
+        <TaskDetailDrawer
+          isOpen={!!selectedTodoForDetail && !isTaskModalOpen}
+          todo={selectedTodoForDetail}
+          onClose={() => setSelectedTodoForDetail(null)}
+          onEdit={handleOpenEditModal}
+          onDelete={handleDeleteTask}
+          onStatusChange={handleStatusChange}
+          onToggleSubtask={handleToggleSubtask}
+        />
       )}
+
 
       {/* Task Create/Edit Modal */}
 

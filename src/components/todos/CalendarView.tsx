@@ -89,13 +89,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // Calculate anchored position for the popover right next to the selected day cell
   const getPopoverPositionStyle = (): React.CSSProperties => {
     if (selectedDayIndex === null) {
-      return { position: "absolute", top: "120px", right: "24px" };
+      return { position: "absolute", top: "10px", right: "10px" };
     }
 
     const colIndex = selectedDayIndex % 7; // 0 (Mon) to 6 (Sun)
     const rowIndex = Math.floor(selectedDayIndex / 7); // 0 to ~5
 
-    const topPx = rowIndex * 165 + 130;
+    const topPx = rowIndex * 165 + 10;
 
     if (colIndex <= 3) {
       // Columns Mon - Thu: Place popover to the right of the cell
@@ -103,7 +103,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       return {
         position: "absolute",
         top: `${topPx}px`,
-        left: `calc(${leftPercent}% - 8px)`,
+        left: `calc(${leftPercent}% + 8px)`,
       };
     } else {
       // Columns Fri - Sun: Place popover to the left of the cell
@@ -111,7 +111,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       return {
         position: "absolute",
         top: `${topPx}px`,
-        right: `calc(${rightPercent}% - 8px)`,
+        right: `calc(${rightPercent}% + 8px)`,
       };
     }
   };
@@ -170,119 +170,125 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         ))}
       </div>
 
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-3 relative">
-        {days.map((day, idx) => {
-          const isSelectedMonth = isSameMonth(day, monthStart);
-          const isCurrentDay = isToday(day);
-          const isDaySelected = selectedDayIndex === idx && !!selectedTodo;
+      {/* Calendar Grid Container (with separate overlay layer) */}
+      <div className="relative w-full">
+        {/* Pure CSS Grid for Days */}
+        <div className="grid grid-cols-7 gap-3">
+          {days.map((day, idx) => {
+            const isSelectedMonth = isSameMonth(day, monthStart);
+            const isCurrentDay = isToday(day);
+            const isDaySelected = selectedDayIndex === idx && !!selectedTodo;
 
-          // Find tasks due or started on this day
-          const dayTodos = todos.filter((todo) => {
-            const dateToCheck = todo.due_date || todo.start_date;
-            if (!dateToCheck) return false;
-            try {
-              return isSameDay(parseISO(dateToCheck), day);
-            } catch {
-              return false;
-            }
-          });
+            // Find tasks due or started on this day
+            const dayTodos = todos.filter((todo) => {
+              const dateToCheck = todo.due_date || todo.start_date;
+              if (!dateToCheck) return false;
+              try {
+                return isSameDay(parseISO(dateToCheck), day);
+              } catch {
+                return false;
+              }
+            });
 
-          return (
-            <div
-              key={idx}
-              className={`min-h-[145px] sm:min-h-[160px] p-3 rounded-2xl border transition-all flex flex-col justify-between group ${
-                isSelectedMonth
-                  ? "bg-white/60 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md"
-                  : "bg-slate-50/20 dark:bg-slate-950/20 border-slate-200/30 dark:border-slate-800/30 opacity-40"
-              } ${isCurrentDay ? "ring-2 ring-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/30" : ""} ${
-                isDaySelected ? "ring-2 ring-orange-500/80 bg-orange-50/20 dark:bg-orange-950/20" : ""
-              }`}
-            >
-              {/* Day Header */}
-              <div className="flex items-center justify-between">
-                <span
-                  className={`text-xs font-extrabold w-7 h-7 flex items-center justify-center rounded-xl transition ${
-                    isCurrentDay
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/30"
-                      : isSelectedMonth
-                      ? "text-slate-800 dark:text-slate-200 group-hover:text-indigo-600"
-                      : "text-slate-400"
-                  }`}
-                >
-                  {format(day, "d")}
-                </span>
+            return (
+              <div
+                key={idx}
+                className={`min-h-[145px] sm:min-h-[160px] p-3 rounded-2xl border transition-all flex flex-col justify-between group ${
+                  isSelectedMonth
+                    ? "bg-white/60 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md"
+                    : "bg-slate-50/20 dark:bg-slate-950/20 border-slate-200/30 dark:border-slate-800/30 opacity-40"
+                } ${isCurrentDay ? "ring-2 ring-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/30" : ""} ${
+                  isDaySelected ? "ring-2 ring-orange-500/80 bg-orange-50/20 dark:bg-orange-950/20" : ""
+                }`}
+              >
+                {/* Day Header */}
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`text-xs font-extrabold w-7 h-7 flex items-center justify-center rounded-xl transition ${
+                      isCurrentDay
+                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/30"
+                        : isSelectedMonth
+                        ? "text-slate-800 dark:text-slate-200 group-hover:text-indigo-600"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    {format(day, "d")}
+                  </span>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onCloseDetail();
-                    onOpenNewTaskModal("TODO", day);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                  title="Thêm việc vào ngày này"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Task Chips in Day */}
-              <div className="mt-2 space-y-1.5 flex-1 overflow-y-auto max-h-[105px] scrollbar-thin">
-                {dayTodos.map((todo) => (
                   <button
                     type="button"
-                    key={todo.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedDayIndex(idx);
-                      onSelectTodo(todo);
+                      onCloseDetail();
+                      onOpenNewTaskModal("TODO", day);
                     }}
-                    className={`w-full text-left px-2.5 py-1 rounded-xl text-xs font-semibold truncate block transition border ${getPriorityStyle(
-                      todo.priority
-                    )} ${todo.status === "COMPLETED" ? "opacity-50 line-through" : ""} cursor-pointer ${
-                      selectedTodo?.id === todo.id ? "ring-2 ring-orange-500 scale-[1.02]" : ""
-                    }`}
-                    title={`${todo.title} - Bấm để xem chi tiết`}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                    title="Thêm việc vào ngày này"
                   >
-                    <div className="flex items-center gap-1">
-                      {todo.status === "COMPLETED" ? (
-                        <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-emerald-500" />
-                      ) : (
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
-                      )}
-                      <span className="truncate">{todo.title}</span>
-                    </div>
+                    <Plus className="w-3.5 h-3.5" />
                   </button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+                </div>
 
-        {/* Anchored Task Detail Popover right inside the calendar beside the selected day cell */}
+                {/* Task Chips in Day */}
+                <div className="mt-2 space-y-1.5 flex-1 overflow-y-auto max-h-[105px] scrollbar-thin">
+                  {dayTodos.map((todo) => (
+                    <button
+                      type="button"
+                      key={todo.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDayIndex(idx);
+                        onSelectTodo(todo);
+                      }}
+                      className={`w-full text-left px-2.5 py-1 rounded-xl text-xs font-semibold truncate block transition border ${getPriorityStyle(
+                        todo.priority
+                      )} ${todo.status === "COMPLETED" ? "opacity-50 line-through" : ""} cursor-pointer ${
+                        selectedTodo?.id === todo.id ? "ring-2 ring-orange-500 scale-[1.02]" : ""
+                      }`}
+                      title={`${todo.title} - Bấm để xem chi tiết`}
+                    >
+                      <div className="flex items-center gap-1">
+                        {todo.status === "COMPLETED" ? (
+                          <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-emerald-500" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+                        )}
+                        <span className="truncate">{todo.title}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Floating Overlay Layer (Out of Grid Flow) for Anchored Detail Popover */}
         {selectedTodo && (
-          <TaskDetailPopover
-            isOpen={!!selectedTodo}
-            todo={selectedTodo}
-            positionStyle={getPopoverPositionStyle()}
-            onClose={() => {
-              onCloseDetail();
-              setSelectedDayIndex(null);
-            }}
-            onEdit={(t) => {
-              onCloseDetail();
-              setSelectedDayIndex(null);
-              onEdit(t);
-            }}
-            onDelete={(id) => {
-              onCloseDetail();
-              setSelectedDayIndex(null);
-              onDelete(id);
-            }}
-            onStatusChange={onStatusChange}
-            onToggleSubtask={onToggleSubtask}
-          />
+          <div className="absolute inset-0 pointer-events-none z-30">
+            <div className="pointer-events-auto" style={getPopoverPositionStyle()}>
+              <TaskDetailPopover
+                isOpen={!!selectedTodo}
+                todo={selectedTodo}
+                onClose={() => {
+                  onCloseDetail();
+                  setSelectedDayIndex(null);
+                }}
+                onEdit={(t) => {
+                  onCloseDetail();
+                  setSelectedDayIndex(null);
+                  onEdit(t);
+                }}
+                onDelete={(id) => {
+                  onCloseDetail();
+                  setSelectedDayIndex(null);
+                  onDelete(id);
+                }}
+                onStatusChange={onStatusChange}
+                onToggleSubtask={onToggleSubtask}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>
