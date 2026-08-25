@@ -76,6 +76,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => onOpenNewTaskModal(col.id)}
                   className="p-1.5 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                   title={`Thêm công việc vào cột ${col.title}`}
@@ -90,6 +91,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200/80 dark:border-slate-800/80 rounded-2xl text-center">
                     <p className="text-xs text-slate-400 font-medium">Chưa có công việc ở mục này</p>
                     <button
+                      type="button"
                       onClick={() => onOpenNewTaskModal(col.id)}
                       className="mt-3 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                     >
@@ -98,13 +100,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   </div>
                 ) : (
                   colTodos.map((todo) => (
-                    <div
-                      key={todo.id}
-                      className="relative group cursor-pointer"
-                      onClick={() => onSelectTodo(todo)}
-                    >
+                    <div key={todo.id} className="relative group">
                       <TodoCard
                         todo={todo}
+                        onSelectTodo={onSelectTodo}
                         onEdit={onEdit}
                         onDelete={onDelete}
                         onStatusChange={onStatusChange}
@@ -118,7 +117,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       >
                         {col.id !== "TODO" && (
                           <button
-                            onClick={() => {
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const prevStatus: Status =
                                 col.id === "CANCELLED"
                                   ? "COMPLETED"
@@ -134,7 +135,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         )}
                         {col.id !== "COMPLETED" && col.id !== "CANCELLED" && (
                           <button
-                            onClick={() => {
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const nextStatus: Status = col.id === "TODO" ? "IN_PROGRESS" : "COMPLETED";
                               onStatusChange(todo.id, nextStatus);
                             }}

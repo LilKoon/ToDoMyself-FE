@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Todo, Status } from "@/types";
 import {
   format,
@@ -17,7 +17,7 @@ import {
   parseISO,
 } from "date-fns";
 import { vi } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, CheckCircle2, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
 import { TaskDetailPopover } from "./TaskDetailPopover";
 
 interface CalendarViewProps {
@@ -45,6 +45,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+
+  // When selectedTodo becomes null (e.g. closed), also reset selectedDayIndex
+  useEffect(() => {
+    if (!selectedTodo) {
+      setSelectedDayIndex(null);
+    }
+  }, [selectedTodo]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
@@ -89,7 +96,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // Calculate anchored position for the popover right next to the selected day cell
   const getPopoverPositionStyle = (): React.CSSProperties => {
     if (selectedDayIndex === null) {
-      return { position: "absolute", top: "10px", right: "10px" };
+      return { display: "none" };
     }
 
     const colIndex = selectedDayIndex % 7; // 0 (Mon) to 6 (Sun)
@@ -111,10 +118,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       return {
         position: "absolute",
         top: `${topPx}px`,
-        right: `calc(${rightPercent}% + 8px)`,
+        right: `calc(${rightPercent}% - 8px)`,
       };
     }
   };
+
+  const isTaskEligibleForCalendar = !!(selectedTodo && (selectedTodo.due_date || selectedTodo.start_date) && selectedDayIndex !== null);
 
   return (
     <div className="relative glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800/80 w-full shadow-lg">
@@ -134,6 +143,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={goToToday}
             className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 transition cursor-pointer"
           >
@@ -141,6 +151,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </button>
           <div className="flex items-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 p-1">
             <button
+              type="button"
               onClick={prevMonth}
               className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tháng trước"
@@ -148,6 +159,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
+              type="button"
               onClick={nextMonth}
               className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tháng sau"
@@ -220,6 +232,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       onCloseDetail();
+                      setSelectedDayIndex(null);
                       onOpenNewTaskModal("TODO", day);
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
@@ -264,11 +277,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
 
         {/* Floating Overlay Layer (Out of Grid Flow) for Anchored Detail Popover */}
-        {selectedTodo && (
+        {isTaskEligibleForCalendar && (
           <div className="absolute inset-0 pointer-events-none z-30">
             <div className="pointer-events-auto" style={getPopoverPositionStyle()}>
               <TaskDetailPopover
-                isOpen={!!selectedTodo}
+                isOpen={true}
                 todo={selectedTodo}
                 onClose={() => {
                   onCloseDetail();

@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Todo, Priority, Status, Subtask } from "@/types";
+import { Todo, Priority, Status } from "@/types";
 import {
   Calendar,
-  Clock,
   CheckCircle2,
   Circle,
-  MoreVertical,
   Edit2,
   Trash2,
   Bell,
@@ -17,7 +15,6 @@ import {
   ListCheck,
 } from "lucide-react";
 import { format, isPast, isToday, isTomorrow, parseISO } from "date-fns";
-import { vi } from "date-fns/locale";
 import confetti from "canvas-confetti";
 
 interface TodoCardProps {
@@ -38,12 +35,11 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   onToggleSubtask,
 }) => {
   const [showSubtasks, setShowSubtasks] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-
 
   const isCompleted = todo.status === "COMPLETED";
 
-  const handleToggleComplete = () => {
+  const handleToggleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const nextStatus: Status = isCompleted ? "TODO" : "COMPLETED";
     if (nextStatus === "COMPLETED") {
       confetti({
@@ -97,15 +93,20 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 
   return (
     <div
-      className={`glass-card rounded-2xl p-4 border transition duration-200 relative group ${
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onSelectTodo) onSelectTodo(todo);
+      }}
+      className={`glass-card rounded-2xl p-4 border transition duration-200 relative group cursor-pointer ${
         isCompleted
           ? "opacity-60 bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800/50"
-          : "border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40"
+          : "border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40 hover:shadow-md"
       }`}
     >
       <div className="flex items-start gap-3">
         {/* Completion Checkbox */}
         <button
+          type="button"
           onClick={handleToggleComplete}
           className={`mt-0.5 p-1 rounded-lg transition cursor-pointer ${
             isCompleted
@@ -149,14 +150,12 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           </div>
 
           <h3
-            onClick={() => (onSelectTodo ? onSelectTodo(todo) : onEdit(todo))}
-            className={`text-base font-bold text-slate-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition tracking-tight ${
+            className={`text-base font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition tracking-tight ${
               isCompleted ? "line-through text-slate-400 dark:text-slate-500" : ""
             }`}
           >
             {todo.title}
           </h3>
-
 
           {todo.description && (
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
@@ -169,8 +168,12 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
               <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1.5">
                 <button
-                  onClick={() => setShowSubtasks(!showSubtasks)}
-                  className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSubtasks(!showSubtasks);
+                  }}
+                  className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium cursor-pointer"
                 >
                   <ListCheck className="w-3.5 h-3.5" />
                   <span>
@@ -198,6 +201,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                   {todo.subtasks.map((s) => (
                     <div
                       key={s.id}
+                      onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300"
                     >
                       <input
@@ -230,14 +234,22 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             {/* Actions */}
             <div className="flex items-center gap-1">
               <button
-                onClick={() => onEdit(todo)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(todo);
+                }}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition cursor-pointer"
                 title="Chỉnh sửa"
               >
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => onDelete(todo.id)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(todo.id);
+                }}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
                 title="Xóa"
               >

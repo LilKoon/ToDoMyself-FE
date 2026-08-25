@@ -85,19 +85,18 @@ export default function DashboardPage() {
       setTodos(todosData);
       setStats(statsData);
 
-      // Keep open drawer updated if the active task was refreshed
-      if (selectedTodoForDetail) {
-        const updatedSelected = todosData.find((t) => t.id === selectedTodoForDetail.id);
-        if (updatedSelected) {
-          setSelectedTodoForDetail(updatedSelected);
-        }
-      }
+      // Keep open drawer updated without triggering re-fetch loop
+      setSelectedTodoForDetail((prev) => {
+        if (!prev) return null;
+        return todosData.find((t) => t.id === prev.id) || null;
+      });
     } catch (err) {
       console.error("Failed to load todos:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, activeCategory, searchQuery, activeFilter, selectedTodoForDetail?.id]);
+  }, [isAuthenticated, activeCategory, searchQuery, activeFilter]);
+
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -194,12 +193,22 @@ export default function DashboardPage() {
         {/* Left Sidebar */}
         <Sidebar
           viewMode={viewMode}
-          onViewModeChange={setViewMode}
+          onViewModeChange={(mode) => {
+            setSelectedTodoForDetail(null);
+            setViewMode(mode);
+          }}
           activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
+          onFilterChange={(filter) => {
+            setSelectedTodoForDetail(null);
+            setActiveFilter(filter);
+          }}
           activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
+          onCategoryChange={(cat) => {
+            setSelectedTodoForDetail(null);
+            setActiveCategory(cat);
+          }}
           stats={
+
             stats
               ? {
                   total: stats.total_todos,
