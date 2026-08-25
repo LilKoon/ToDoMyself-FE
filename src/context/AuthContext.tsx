@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User, AuthResponse } from "@/types";
+import { User } from "@/types";
 import { authApi } from "@/services/api";
 import { useRouter } from "next/navigation";
 
@@ -33,6 +33,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const initAuth = async () => {
+      if (typeof window === "undefined") {
+        setIsLoading(false);
+        return;
+      }
       const token = localStorage.getItem("todo_access_token");
       if (token) {
         try {
@@ -60,10 +64,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem("todo_refresh_token", res.refresh_token);
         }
         setUser(res.user);
-        router.push("/dashboard");
+        setIsLoading(false);
+        window.location.href = "/dashboard";
       }
-    } finally {
+    } catch (err) {
       setIsLoading(false);
+      throw err;
     }
   };
 
@@ -77,10 +83,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem("todo_refresh_token", res.refresh_token);
         }
         setUser(res.user);
-        router.push("/dashboard");
+        setIsLoading(false);
+        window.location.href = "/dashboard";
       }
-    } finally {
+    } catch (err) {
       setIsLoading(false);
+      throw err;
     }
   };
 
@@ -89,13 +97,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const res = await authApi.googleAuth(idToken);
       
-      // RULE: If needs password setup, block entry and show modal!
+      // RULE: If needs password setup, block entry and show modal immediately!
       if (res.needs_password_setup) {
         setNeedsPasswordSetup(true);
         setSetupToken(res.setup_token || null);
         setPendingUser(res.user || null);
         setIsLoading(false);
-        return false; // Not fully logged in yet
+        return false; // Not fully logged in yet, modal handles next step
       }
 
       if (res.access_token && res.user) {
@@ -104,9 +112,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem("todo_refresh_token", res.refresh_token);
         }
         setUser(res.user);
-        router.push("/dashboard");
+        setIsLoading(false);
+        window.location.href = "/dashboard";
         return true;
       }
+      setIsLoading(false);
       return false;
     } catch (err) {
       setIsLoading(false);
@@ -128,10 +138,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setNeedsPasswordSetup(false);
         setSetupToken(null);
         setPendingUser(null);
-        router.push("/dashboard");
+        setIsLoading(false);
+        window.location.href = "/dashboard";
       }
-    } finally {
+    } catch (err) {
       setIsLoading(false);
+      throw err;
     }
   };
 
@@ -145,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("todo_access_token");
     localStorage.removeItem("todo_refresh_token");
     setUser(null);
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   const refreshUser = async () => {

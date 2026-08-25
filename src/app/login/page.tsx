@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
 import {
   CheckSquare,
@@ -17,12 +19,20 @@ import {
 import NextLink from "next/link";
 
 export default function LoginPage() {
-  const { login, googleLogin, isLoading } = useAuth();
+  const { login, googleLogin, isAuthenticated, user, isLoading } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      router.replace("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, user, router]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +42,6 @@ export default function LoginPage() {
       await login(email, password);
     } catch (err: any) {
       setError(err.response?.data?.detail || "Email hoặc mật khẩu không chính xác.");
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -40,13 +49,17 @@ export default function LoginPage() {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
       setError(null);
+      setIsSubmitting(true);
       try {
         await googleLogin(credentialResponse.credential);
       } catch (err: any) {
         setError(err.response?.data?.detail || "Đăng nhập bằng Google thất bại.");
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-50 dark:bg-[#090d16]">
