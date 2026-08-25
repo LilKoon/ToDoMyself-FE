@@ -26,11 +26,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  // Auto redirect to dashboard if already logged in
+  // Check auth immediately to prevent ANY login page flash
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
-      router.replace("/dashboard");
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("todo_access_token");
+      if (token || isAuthenticated) {
+        router.replace("/dashboard");
+        return;
+      }
+    }
+    if (!isLoading && !isAuthenticated) {
+      setIsReady(true);
     }
   }, [isLoading, isAuthenticated, user, router]);
 
@@ -59,6 +67,16 @@ export default function LoginPage() {
       }
     }
   };
+
+  // If authenticated or checking auth, do not render login form at all!
+  if (!isReady || isAuthenticated || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#090d16]">
+        <div className="w-8 h-8 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
 
 
   return (

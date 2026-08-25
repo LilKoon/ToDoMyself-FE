@@ -20,10 +20,14 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push("/dashboard");
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("todo_access_token");
+      if (token || isAuthenticated) {
+        router.replace("/dashboard");
+      }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, router]);
+
 
   return (
     <div className="min-h-screen flex flex-col justify-between relative overflow-hidden">
