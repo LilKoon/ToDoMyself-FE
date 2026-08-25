@@ -11,28 +11,28 @@ import {
   Inbox,
   ChevronDown,
   ChevronRight,
-  Sparkles,
   Layers,
 } from "lucide-react";
 import { isPast, isToday, parseISO } from "date-fns";
 
 interface GroupedListViewProps {
   todos: Todo[];
-  onSelectTodo: (todo: Todo) => void;
   onEdit: (todo: Todo) => void;
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: Status) => void;
+  onToggleSubtask: (subtaskId: number, isCompleted: boolean) => void;
   onOpenNewTaskModal: () => void;
 }
 
 export const GroupedListView: React.FC<GroupedListViewProps> = ({
   todos,
-  onSelectTodo,
   onEdit,
   onDelete,
   onStatusChange,
+  onToggleSubtask,
   onOpenNewTaskModal,
 }) => {
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
 
   if (todos.length === 0) {
@@ -91,6 +91,10 @@ export const GroupedListView: React.FC<GroupedListViewProps> = ({
     }
   });
 
+  const handleToggleExpand = (id: number) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Group: Overdue */}
@@ -100,15 +104,17 @@ export const GroupedListView: React.FC<GroupedListViewProps> = ({
             <AlertTriangle className="w-4 h-4" />
             <span>Việc Quá Hạn Cần Làm Gấp ({overdueTodos.length})</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {overdueTodos.map((todo) => (
               <TaskRow
                 key={todo.id}
                 todo={todo}
-                onSelectTodo={onSelectTodo}
+                isExpanded={expandedId === todo.id}
+                onToggleExpand={() => handleToggleExpand(todo.id)}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onStatusChange={onStatusChange}
+                onToggleSubtask={onToggleSubtask}
               />
             ))}
           </div>
@@ -122,15 +128,17 @@ export const GroupedListView: React.FC<GroupedListViewProps> = ({
             <Clock className="w-4 h-4" />
             <span>Việc Hôm Nay ({todayTodos.length})</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {todayTodos.map((todo) => (
               <TaskRow
                 key={todo.id}
                 todo={todo}
-                onSelectTodo={onSelectTodo}
+                isExpanded={expandedId === todo.id}
+                onToggleExpand={() => handleToggleExpand(todo.id)}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onStatusChange={onStatusChange}
+                onToggleSubtask={onToggleSubtask}
               />
             ))}
           </div>
@@ -144,15 +152,17 @@ export const GroupedListView: React.FC<GroupedListViewProps> = ({
             <Calendar className="w-4 h-4" />
             <span>Sắp Đến Hạn ({upcomingTodos.length})</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {upcomingTodos.map((todo) => (
               <TaskRow
                 key={todo.id}
                 todo={todo}
-                onSelectTodo={onSelectTodo}
+                isExpanded={expandedId === todo.id}
+                onToggleExpand={() => handleToggleExpand(todo.id)}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onStatusChange={onStatusChange}
+                onToggleSubtask={onToggleSubtask}
               />
             ))}
           </div>
@@ -166,15 +176,17 @@ export const GroupedListView: React.FC<GroupedListViewProps> = ({
             <Layers className="w-4 h-4" />
             <span>Công Việc Linh Hoạt Không Hạn ({noDateTodos.length})</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {noDateTodos.map((todo) => (
               <TaskRow
                 key={todo.id}
                 todo={todo}
-                onSelectTodo={onSelectTodo}
+                isExpanded={expandedId === todo.id}
+                onToggleExpand={() => handleToggleExpand(todo.id)}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onStatusChange={onStatusChange}
+                onToggleSubtask={onToggleSubtask}
               />
             ))}
           </div>
@@ -195,15 +207,17 @@ export const GroupedListView: React.FC<GroupedListViewProps> = ({
           </button>
 
           {showCompleted && (
-            <div className="space-y-2 animate-fade-in">
+            <div className="space-y-2.5 animate-fade-in">
               {completedTodos.map((todo) => (
                 <TaskRow
                   key={todo.id}
                   todo={todo}
-                  onSelectTodo={onSelectTodo}
+                  isExpanded={expandedId === todo.id}
+                  onToggleExpand={() => handleToggleExpand(todo.id)}
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onStatusChange={onStatusChange}
+                  onToggleSubtask={onToggleSubtask}
                 />
               ))}
             </div>

@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { Todo, Status } from "@/types";
 import { KanbanCard } from "./KanbanCard";
-import { Plus, LayoutGrid, ListFilter, AlertTriangle, Layers } from "lucide-react";
+import { TaskDetailPopover } from "./TaskDetailPopover";
+import { Plus, LayoutGrid, ListFilter, Layers } from "lucide-react";
 import { isPast, isToday, parseISO } from "date-fns";
 
 interface KanbanBoardProps {
   todos: Todo[];
-  onSelectTodo: (todo: Todo) => void;
   onEdit: (todo: Todo) => void;
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: Status) => void;
@@ -18,7 +18,6 @@ interface KanbanBoardProps {
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   todos,
-  onSelectTodo,
   onEdit,
   onDelete,
   onStatusChange,
@@ -26,6 +25,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onOpenNewTaskModal,
 }) => {
   const [isCompact, setIsCompact] = useState<boolean>(false);
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+  const [selectedColIndex, setSelectedColIndex] = useState<number | null>(null);
 
   const isTaskOverdue = (todo: Todo): boolean => {
     if (todo.status === "COMPLETED" || todo.status === "CANCELLED") return false;
@@ -100,13 +101,38 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     },
   ];
 
+  // Calculate anchored position for the detail popover beside the clicked column
+  const getPopoverPositionStyle = (): React.CSSProperties => {
+    if (selectedColIndex === null) {
+      return { display: "none" };
+    }
+
+    if (selectedColIndex <= 2) {
+      // Left/Center columns: Place popover to the right of this column
+      const leftPercent = ((selectedColIndex + 1) / 5) * 100;
+      return {
+        position: "absolute",
+        top: "60px",
+        left: `min(calc(${leftPercent}% + 10px), calc(100% - 430px))`,
+      };
+    } else {
+      // Right columns: Place popover to the left of this column
+      const rightPercent = ((5 - selectedColIndex) / 5) * 100;
+      return {
+        position: "absolute",
+        top: "60px",
+        right: `min(calc(${rightPercent}% + 10px), calc(100% - 430px))`,
+      };
+    }
+  };
+
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className="w-full flex flex-col gap-4 relative">
       {/* Board Controls Toolbar */}
       <div className="flex items-center justify-between pb-2">
         <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
           <Layers className="w-4 h-4 text-indigo-500" />
-          <span>Bảng quy trình Kanban 5 cột thông minh (Tự động gom việc trễ hạn)</span>
+          <span>Bảng quy trình Kanban 5 cột (Bấm vào thẻ để xem chi tiết bên cạnh)</span>
         </div>
 
         {/* View Mode Toggle: Compact vs Detailed */}
@@ -141,8 +167,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       </div>
 
       {/* 5 Columns Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start">
-        {columns.map((col) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start relative">
+        {columns.map((col, colIdx) => {
           const colTodos = todos.filter(col.filterFn);
 
           return (
@@ -187,16 +213,23 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   </div>
                 ) : (
                   colTodos.map((todo) => (
-                    <KanbanCard
+                    <div
                       key={todo.id}
-                      todo={todo}
-                      isCompact={isCompact}
-                      onSelectTodo={onSelectTodo}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onStatusChange={onStatusChange}
-                      onToggleSubtask={onToggleSubtask}
-                    />
+                      className={selectedTodo?.id === todo.id ? "ring-2 ring-indigo-500 rounded-2xl" : ""}
+                    >
+                      <KanbanCard
+                        todo={todo}
+                        isCompact={isCompact}
+                        onSelectTodo={(t) => {
+                          setSelectedColIndex(colIdx);
+                          setSelectedTodo(selectedTodo?.id === t.id ? null : t);
+                        }}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onStatusChange={onStatusChange}
+                        onToggleSubtask={onToggleSubtask}
+                      />
+                    </div>
                   ))
                 )}
               </div>
@@ -215,6 +248,34 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </div>
           );
         })}
+
+        {/* Anchored Task Detail Popover beside the clicked Kanban column / card (No backdrop blur!) */}
+        {selectedTodo && (
+          <div className="absolute inset-0 pointer-events-none z-30">
+            <div className="pointer-events-auto" style={getPopoverPositionStyle()}>
+              <TaskDetailPopover
+                isOpen={!!selectedTodo}
+                todo={selectedTodo}
+                onClose={() => {
+                  setSelectedTodo(null);
+                  setSelectedColIndex(null);
+                }}
+                onEdit={(t) => {
+                  setSelectedTodo(null);
+                  setSelectedColIndex(null);
+                  onEdit(t);
+                }}
+                onDelete={(id) => {
+                  setSelectedTodo(null);
+                  setSelectedColIndex(null);
+                  onDelete(id);
+                }}
+                onStatusChange={onStatusChange}
+                onToggleSubtask={onToggleSubtask}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

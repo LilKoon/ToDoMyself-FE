@@ -13,8 +13,8 @@ import { GroupedListView } from "@/components/todos/GroupedListView";
 import { KanbanBoard } from "@/components/todos/KanbanBoard";
 import { CalendarView } from "@/components/todos/CalendarView";
 import { TaskModal } from "@/components/todos/TaskModal";
-import { TaskDetailDrawer } from "@/components/todos/TaskDetailDrawer";
 import { Toast, ToastType } from "@/components/common/Toast";
+
 
 
 
@@ -354,24 +354,22 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* View 1: Grouped List View (Linear / Notion style) */}
+              {/* View 1: Grouped List View with Inline Expansion */}
               {viewMode === "list" && (
                 <GroupedListView
                   todos={displayTodos}
-                  onSelectTodo={(t) => setSelectedTodoForDetail(t)}
                   onEdit={handleOpenEditModal}
                   onDelete={handleDeleteTask}
                   onStatusChange={handleStatusChange}
+                  onToggleSubtask={handleToggleSubtask}
                   onOpenNewTaskModal={() => handleOpenCreateModal("TODO")}
                 />
               )}
 
-
-              {/* View 2: Kanban Board View */}
+              {/* View 2: Kanban Board View with Anchored Popover */}
               {viewMode === "kanban" && (
                 <KanbanBoard
                   todos={displayTodos}
-                  onSelectTodo={(t) => setSelectedTodoForDetail(t)}
                   onEdit={handleOpenEditModal}
                   onDelete={handleDeleteTask}
                   onStatusChange={handleStatusChange}
@@ -399,22 +397,8 @@ export default function DashboardPage() {
         </main>
       </div>
 
-
-      {/* Task Detail Slide-Over Drawer for List & Kanban views */}
-      {viewMode !== "calendar" && (
-        <TaskDetailDrawer
-          isOpen={!!selectedTodoForDetail && !isTaskModalOpen}
-          todo={selectedTodoForDetail}
-          onClose={() => setSelectedTodoForDetail(null)}
-          onEdit={handleOpenEditModal}
-          onDelete={handleDeleteTask}
-          onStatusChange={handleStatusChange}
-          onToggleSubtask={handleToggleSubtask}
-        />
-      )}
-
-
       {/* Task Create/Edit Modal */}
+
 
       <TaskModal
         isOpen={isTaskModalOpen}
