@@ -14,6 +14,9 @@ interface AuthContextType {
   pendingUser: User | null;
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, name: string, pass: string) => Promise<void>;
+  sendRegisterOTP: (email: string, name: string, pass: string) => Promise<{ message: string; cooldown_seconds: number; expires_in_seconds: number }>;
+  verifyRegisterOTP: (email: string, otpCode: string) => Promise<void>;
+  resendRegisterOTP: (email: string) => Promise<{ message: string; cooldown_seconds: number; expires_in_seconds: number }>;
   googleLogin: (idToken: string) => Promise<boolean>;
   completePasswordSetup: (password: string) => Promise<void>;
   logout: () => void;
@@ -92,6 +95,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const sendRegisterOTP = async (email: string, name: string, pass: string) => {
+    return await authApi.sendRegisterOTP(email, name, pass);
+  };
+
+  const verifyRegisterOTP = async (email: string, otpCode: string) => {
+    setIsLoading(true);
+    try {
+      const res = await authApi.verifyRegisterOTP(email, otpCode);
+      if (res.access_token && res.user) {
+        localStorage.setItem("todo_access_token", res.access_token);
+        if (res.refresh_token) {
+          localStorage.setItem("todo_refresh_token", res.refresh_token);
+        }
+        setUser(res.user);
+        setIsLoading(false);
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 150);
+      }
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    }
+  };
+
+  const resendRegisterOTP = async (email: string) => {
+    return await authApi.resendRegisterOTP(email);
+  };
+
   const googleLogin = async (idToken: string): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -151,7 +183,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-
   const closePasswordSetupModal = () => {
     setNeedsPasswordSetup(false);
     setSetupToken(null);
@@ -185,6 +216,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         pendingUser,
         login,
         register,
+        sendRegisterOTP,
+        verifyRegisterOTP,
+        resendRegisterOTP,
         googleLogin,
         completePasswordSetup,
         logout,

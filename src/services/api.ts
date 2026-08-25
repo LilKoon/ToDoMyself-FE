@@ -80,6 +80,18 @@ export const authApi = {
     const res = await api.post<AuthResponse>("/auth/register", { email, full_name, password });
     return res.data;
   },
+  sendRegisterOTP: async (email: string, full_name: string, password: string): Promise<{ message: string; cooldown_seconds: number; expires_in_seconds: number }> => {
+    const res = await api.post<{ message: string; cooldown_seconds: number; expires_in_seconds: number }>("/auth/register/send-otp", { email, full_name, password });
+    return res.data;
+  },
+  verifyRegisterOTP: async (email: string, otp_code: string): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>("/auth/register/verify-otp", { email, otp_code });
+    return res.data;
+  },
+  resendRegisterOTP: async (email: string): Promise<{ message: string; cooldown_seconds: number; expires_in_seconds: number }> => {
+    const res = await api.post<{ message: string; cooldown_seconds: number; expires_in_seconds: number }>("/auth/register/resend-otp", { email });
+    return res.data;
+  },
   googleAuth: async (id_token: string): Promise<AuthResponse> => {
     const res = await api.post<AuthResponse>("/auth/google", { id_token });
     return res.data;
@@ -97,6 +109,7 @@ export const authApi = {
     return res.data;
   },
 };
+
 
 // Todo Services
 export const todoApi = {
