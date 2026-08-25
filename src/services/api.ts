@@ -8,7 +8,11 @@ import {
   UserNotificationSettings,
 } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+if (rawApiUrl && !rawApiUrl.endsWith("/api/v1")) {
+  rawApiUrl = `${rawApiUrl.replace(/\/+$/, "")}/api/v1`;
+}
+const API_URL = rawApiUrl;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -16,6 +20,7 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
 
 // Request interceptor to attach JWT token
 api.interceptors.request.use((config) => {
