@@ -106,6 +106,7 @@ export default function DashboardPage() {
 
   // Handlers
   const handleOpenCreateModal = (status: Status = "TODO", initialDate?: Date) => {
+    setSelectedTodoForDetail(null);
     setEditingTodo(null);
     setDefaultModalStatus(status);
     setInitialModalDate(initialDate);
@@ -113,23 +114,23 @@ export default function DashboardPage() {
   };
 
   const handleOpenEditModal = (todo: Todo) => {
+    setSelectedTodoForDetail(null);
     setEditingTodo(todo);
     setIsTaskModalOpen(true);
   };
 
   const handleSaveTask = async (taskData: any) => {
     if (editingTodo) {
-      const updated = await todoApi.updateTodo(editingTodo.id, taskData);
+      await todoApi.updateTodo(editingTodo.id, taskData);
       showToast("Cập nhật công việc thành công!", "success");
-      if (selectedTodoForDetail && selectedTodoForDetail.id === editingTodo.id) {
-        setSelectedTodoForDetail(updated);
-      }
     } else {
       await todoApi.createTodo(taskData);
       showToast("Tạo công việc mới thành công!", "success");
     }
+    setSelectedTodoForDetail(null);
     fetchData();
   };
+
 
   const handleDeleteTask = async (id: number) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa công việc này?")) {
@@ -307,7 +308,13 @@ export default function DashboardPage() {
               {viewMode === "calendar" && (
                 <CalendarView
                   todos={todos}
+                  selectedTodo={selectedTodoForDetail}
                   onSelectTodo={(t) => setSelectedTodoForDetail(t)}
+                  onCloseDetail={() => setSelectedTodoForDetail(null)}
+                  onEdit={handleOpenEditModal}
+                  onDelete={handleDeleteTask}
+                  onStatusChange={handleStatusChange}
+                  onToggleSubtask={handleToggleSubtask}
                   onOpenNewTaskModal={(status, date) => handleOpenCreateModal(status, date)}
                 />
               )}
@@ -316,19 +323,23 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* Task Detail Floating Popover (Matched with design in image 1) */}
-      <TaskDetailPopover
-        isOpen={!!selectedTodoForDetail}
-        todo={selectedTodoForDetail}
-        onClose={() => setSelectedTodoForDetail(null)}
-        onEdit={handleOpenEditModal}
-        onDelete={handleDeleteTask}
-        onStatusChange={handleStatusChange}
-        onToggleSubtask={handleToggleSubtask}
-      />
-
+      {/* Task Detail Floating Popover (Only for List / Kanban views, non-blocking) */}
+      {viewMode !== "calendar" && selectedTodoForDetail && !isTaskModalOpen && (
+        <div className="fixed right-6 top-24 z-40">
+          <TaskDetailPopover
+            isOpen={!!selectedTodoForDetail}
+            todo={selectedTodoForDetail}
+            onClose={() => setSelectedTodoForDetail(null)}
+            onEdit={handleOpenEditModal}
+            onDelete={handleDeleteTask}
+            onStatusChange={handleStatusChange}
+            onToggleSubtask={handleToggleSubtask}
+          />
+        </div>
+      )}
 
       {/* Task Create/Edit Modal */}
+
       <TaskModal
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}

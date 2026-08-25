@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Todo } from "@/types";
+import { Todo, Status } from "@/types";
 import {
   format,
   startOfMonth,
@@ -18,19 +18,33 @@ import {
 } from "date-fns";
 import { vi } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, CheckCircle2, Clock } from "lucide-react";
+import { TaskDetailPopover } from "./TaskDetailPopover";
 
 interface CalendarViewProps {
   todos: Todo[];
+  selectedTodo?: Todo | null;
   onSelectTodo: (todo: Todo) => void;
+  onCloseDetail: () => void;
+  onEdit: (todo: Todo) => void;
+  onDelete: (id: number) => void;
+  onStatusChange: (id: number, status: Status) => void;
+  onToggleSubtask: (subtaskId: number, isCompleted: boolean) => void;
   onOpenNewTaskModal: (status?: any, initialDate?: Date) => void;
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
   todos,
+  selectedTodo,
   onSelectTodo,
+  onCloseDetail,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onToggleSubtask,
   onOpenNewTaskModal,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
@@ -39,9 +53,23 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const goToToday = () => setCurrentMonth(new Date());
+  const nextMonth = () => {
+    setCurrentMonth(addMonths(currentMonth, 1));
+    onCloseDetail();
+    setSelectedDayIndex(null);
+  };
+  
+  const prevMonth = () => {
+    setCurrentMonth(subMonths(currentMonth, 1));
+    onCloseDetail();
+    setSelectedDayIndex(null);
+  };
+
+  const goToToday = () => {
+    setCurrentMonth(new Date());
+    onCloseDetail();
+    setSelectedDayIndex(null);
+  };
 
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
@@ -58,8 +86,38 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     }
   };
 
+  // Calculate anchored position for the popover right next to the selected day cell
+  const getPopoverPositionStyle = (): React.CSSProperties => {
+    if (selectedDayIndex === null) {
+      return { position: "absolute", top: "120px", right: "24px" };
+    }
+
+    const colIndex = selectedDayIndex % 7; // 0 (Mon) to 6 (Sun)
+    const rowIndex = Math.floor(selectedDayIndex / 7); // 0 to ~5
+
+    const topPx = rowIndex * 165 + 130;
+
+    if (colIndex <= 3) {
+      // Columns Mon - Thu: Place popover to the right of the cell
+      const leftPercent = ((colIndex + 1) / 7) * 100;
+      return {
+        position: "absolute",
+        top: `${topPx}px`,
+        left: `calc(${leftPercent}% - 8px)`,
+      };
+    } else {
+      // Columns Fri - Sun: Place popover to the left of the cell
+      const rightPercent = ((7 - colIndex) / 7) * 100;
+      return {
+        position: "absolute",
+        top: `${topPx}px`,
+        right: `calc(${rightPercent}% - 8px)`,
+      };
+    }
+  };
+
   return (
-    <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800/80 w-full shadow-lg">
+    <div className="relative glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800/80 w-full shadow-lg">
       {/* Calendar Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
@@ -112,17 +170,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         ))}
       </div>
 
-      {/* Calendar Grid (Spacious & Expanded) */}
-      <div className="grid grid-cols-7 gap-3">
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-3 relative">
         {days.map((day, idx) => {
           const isSelectedMonth = isSameMonth(day, monthStart);
           const isCurrentDay = isToday(day);
+          const isDaySelected = selectedDayIndex === idx && !!selectedTodo;
 
-          // Find tasks due on this day
+          // Find tasks due or started on this day
           const dayTodos = todos.filter((todo) => {
-            if (!todo.due_date) return false;
+            const dateToCheck = todo.due_date || todo.start_date;
+            if (!dateToCheck) return false;
             try {
-              return isSameDay(parseISO(todo.due_date), day);
+              return isSameDay(parseISO(dateToCheck), day);
             } catch {
               return false;
             }
@@ -131,11 +191,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           return (
             <div
               key={idx}
-              className={`min-h-[140px] sm:min-h-[155px] p-3 rounded-2xl border transition-all flex flex-col justify-between group ${
+              className={`min-h-[145px] sm:min-h-[160px] p-3 rounded-2xl border transition-all flex flex-col justify-between group ${
                 isSelectedMonth
                   ? "bg-white/60 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md"
                   : "bg-slate-50/20 dark:bg-slate-950/20 border-slate-200/30 dark:border-slate-800/30 opacity-40"
-              } ${isCurrentDay ? "ring-2 ring-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/30" : ""}`}
+              } ${isCurrentDay ? "ring-2 ring-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/30" : ""} ${
+                isDaySelected ? "ring-2 ring-orange-500/80 bg-orange-50/20 dark:bg-orange-950/20" : ""
+              }`}
             >
               {/* Day Header */}
               <div className="flex items-center justify-between">
@@ -152,7 +214,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 </span>
 
                 <button
-                  onClick={() => onOpenNewTaskModal("TODO", day)}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCloseDetail();
+                    onOpenNewTaskModal("TODO", day);
+                  }}
                   className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                   title="Thêm việc vào ngày này"
                 >
@@ -161,14 +228,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               </div>
 
               {/* Task Chips in Day */}
-              <div className="mt-2 space-y-1.5 flex-1 overflow-y-auto max-h-[100px] scrollbar-thin">
+              <div className="mt-2 space-y-1.5 flex-1 overflow-y-auto max-h-[105px] scrollbar-thin">
                 {dayTodos.map((todo) => (
                   <button
+                    type="button"
                     key={todo.id}
-                    onClick={() => onSelectTodo(todo)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedDayIndex(idx);
+                      onSelectTodo(todo);
+                    }}
                     className={`w-full text-left px-2.5 py-1 rounded-xl text-xs font-semibold truncate block transition border ${getPriorityStyle(
                       todo.priority
-                    )} ${todo.status === "COMPLETED" ? "opacity-50 line-through" : ""} cursor-pointer`}
+                    )} ${todo.status === "COMPLETED" ? "opacity-50 line-through" : ""} cursor-pointer ${
+                      selectedTodo?.id === todo.id ? "ring-2 ring-orange-500 scale-[1.02]" : ""
+                    }`}
                     title={`${todo.title} - Bấm để xem chi tiết`}
                   >
                     <div className="flex items-center gap-1">
@@ -185,6 +259,31 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </div>
           );
         })}
+
+        {/* Anchored Task Detail Popover right inside the calendar beside the selected day cell */}
+        {selectedTodo && (
+          <TaskDetailPopover
+            isOpen={!!selectedTodo}
+            todo={selectedTodo}
+            positionStyle={getPopoverPositionStyle()}
+            onClose={() => {
+              onCloseDetail();
+              setSelectedDayIndex(null);
+            }}
+            onEdit={(t) => {
+              onCloseDetail();
+              setSelectedDayIndex(null);
+              onEdit(t);
+            }}
+            onDelete={(id) => {
+              onCloseDetail();
+              setSelectedDayIndex(null);
+              onDelete(id);
+            }}
+            onStatusChange={onStatusChange}
+            onToggleSubtask={onToggleSubtask}
+          />
+        )}
       </div>
     </div>
   );
