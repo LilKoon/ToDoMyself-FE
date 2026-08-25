@@ -22,6 +22,7 @@ import confetti from "canvas-confetti";
 
 interface TodoCardProps {
   todo: Todo;
+  onSelectTodo?: (todo: Todo) => void;
   onEdit: (todo: Todo) => void;
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: Status) => void;
@@ -30,6 +31,7 @@ interface TodoCardProps {
 
 export const TodoCard: React.FC<TodoCardProps> = ({
   todo,
+  onSelectTodo,
   onEdit,
   onDelete,
   onStatusChange,
@@ -37,6 +39,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 }) => {
   const [showSubtasks, setShowSubtasks] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+
 
   const isCompleted = todo.status === "COMPLETED";
 
@@ -146,13 +149,14 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           </div>
 
           <h3
-            onClick={() => onEdit(todo)}
-            className={`text-base font-semibold text-slate-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition ${
+            onClick={() => (onSelectTodo ? onSelectTodo(todo) : onEdit(todo))}
+            className={`text-base font-bold text-slate-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition tracking-tight ${
               isCompleted ? "line-through text-slate-400 dark:text-slate-500" : ""
             }`}
           >
             {todo.title}
           </h3>
+
 
           {todo.description && (
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">

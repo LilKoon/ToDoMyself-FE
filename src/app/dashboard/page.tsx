@@ -13,6 +13,7 @@ import { TodoCard } from "@/components/todos/TodoCard";
 import { KanbanBoard } from "@/components/todos/KanbanBoard";
 import { CalendarView } from "@/components/todos/CalendarView";
 import { TaskModal } from "@/components/todos/TaskModal";
+import { TaskDetailDrawer } from "@/components/todos/TaskDetailDrawer";
 import { Toast, ToastType } from "@/components/common/Toast";
 
 import {
@@ -42,9 +43,10 @@ export default function DashboardPage() {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Modal states
+  // Modal & Drawer states
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [selectedTodoForDetail, setSelectedTodoForDetail] = useState<Todo | null>(null);
   const [defaultModalStatus, setDefaultModalStatus] = useState<Status>("TODO");
   const [initialModalDate, setInitialModalDate] = useState<Date | undefined>(undefined);
 
@@ -80,12 +82,20 @@ export default function DashboardPage() {
       ]);
       setTodos(todosData);
       setStats(statsData);
+
+      // Keep open drawer updated if the active task was refreshed
+      if (selectedTodoForDetail) {
+        const updatedSelected = todosData.find((t) => t.id === selectedTodoForDetail.id);
+        if (updatedSelected) {
+          setSelectedTodoForDetail(updatedSelected);
+        }
+      }
     } catch (err) {
       console.error("Failed to load todos:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, activeCategory, searchQuery, activeFilter]);
+  }, [isAuthenticated, activeCategory, searchQuery, activeFilter, selectedTodoForDetail?.id]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -108,8 +118,11 @@ export default function DashboardPage() {
 
   const handleSaveTask = async (taskData: any) => {
     if (editingTodo) {
-      await todoApi.updateTodo(editingTodo.id, taskData);
+      const updated = await todoApi.updateTodo(editingTodo.id, taskData);
       showToast("Cập nhật công việc thành công!", "success");
+      if (selectedTodoForDetail && selectedTodoForDetail.id === editingTodo.id) {
+        setSelectedTodoForDetail(updated);
+      }
     } else {
       await todoApi.createTodo(taskData);
       showToast("Tạo công việc mới thành công!", "success");
@@ -122,6 +135,9 @@ export default function DashboardPage() {
       try {
         await todoApi.deleteTodo(id);
         showToast("Đã xóa công việc", "info");
+        if (selectedTodoForDetail?.id === id) {
+          setSelectedTodoForDetail(null);
+        }
         fetchData();
       } catch (err) {
         showToast("Không thể xóa công việc", "error");
@@ -131,7 +147,10 @@ export default function DashboardPage() {
 
   const handleStatusChange = async (id: number, status: Status) => {
     try {
-      await todoApi.updateStatus(id, status);
+      const updated = await todoApi.updateStatus(id, status);
+      if (selectedTodoForDetail?.id === id) {
+        setSelectedTodoForDetail(updated);
+      }
       fetchData();
     } catch (err) {
       showToast("Không thể đổi trạng thái", "error");
@@ -167,8 +186,8 @@ export default function DashboardPage() {
         onSearchChange={setSearchQuery}
       />
 
-      {/* Main Container */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
+      {/* Main Spacious Container */}
+      <div className="flex-1 max-w-[1720px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 flex flex-col lg:flex-row gap-8">
         {/* Left Sidebar */}
         <Sidebar
           viewMode={viewMode}
@@ -197,7 +216,7 @@ export default function DashboardPage() {
           {/* View Toolbar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
             <div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {activeFilter === "all"
                   ? "Tất Cả Công Việc"
                   : activeFilter === "today"
@@ -208,7 +227,7 @@ export default function DashboardPage() {
                   ? "Việc Quá Hạn Cần Làm Ngay"
                   : "Việc Đã Hoàn Thành"}
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {activeCategory !== "All" ? `Danh mục: ${activeCategory} • ` : ""}
                 Hiển thị {todos.length} công việc
               </p>
@@ -217,7 +236,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleOpenCreateModal("TODO")}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition cursor-pointer"
+                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-lg shadow-indigo-500/25 transition cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Thêm Công Việc Mới</span>
@@ -249,7 +268,7 @@ export default function DashboardPage() {
                       </p>
                       <button
                         onClick={() => handleOpenCreateModal("TODO")}
-                        className="mt-6 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition"
+                        className="mt-6 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
                       >
                         + Tạo Công Việc Ngay
                       </button>
@@ -259,6 +278,7 @@ export default function DashboardPage() {
                       <TodoCard
                         key={todo.id}
                         todo={todo}
+                        onSelectTodo={(t) => setSelectedTodoForDetail(t)}
                         onEdit={handleOpenEditModal}
                         onDelete={handleDeleteTask}
                         onStatusChange={handleStatusChange}
@@ -273,6 +293,7 @@ export default function DashboardPage() {
               {viewMode === "kanban" && (
                 <KanbanBoard
                   todos={todos}
+                  onSelectTodo={(t) => setSelectedTodoForDetail(t)}
                   onEdit={handleOpenEditModal}
                   onDelete={handleDeleteTask}
                   onStatusChange={handleStatusChange}
@@ -285,7 +306,7 @@ export default function DashboardPage() {
               {viewMode === "calendar" && (
                 <CalendarView
                   todos={todos}
-                  onEdit={handleOpenEditModal}
+                  onSelectTodo={(t) => setSelectedTodoForDetail(t)}
                   onOpenNewTaskModal={(status, date) => handleOpenCreateModal(status, date)}
                 />
               )}
@@ -293,6 +314,17 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+
+      {/* Task Detail Side-Over Drawer */}
+      <TaskDetailDrawer
+        isOpen={!!selectedTodoForDetail}
+        todo={selectedTodoForDetail}
+        onClose={() => setSelectedTodoForDetail(null)}
+        onEdit={handleOpenEditModal}
+        onDelete={handleDeleteTask}
+        onStatusChange={handleStatusChange}
+        onToggleSubtask={handleToggleSubtask}
+      />
 
       {/* Task Create/Edit Modal */}
       <TaskModal
