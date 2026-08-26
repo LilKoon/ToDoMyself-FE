@@ -26,7 +26,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased min-h-screen bg-slate-50 dark:bg-[#090d16]`}>
+      <body className="antialiased min-h-screen bg-slate-50 dark:bg-[#090d16] font-sans">
+
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
           <AuthProvider>
             {children}

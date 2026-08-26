@@ -53,7 +53,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
-  const [viewingDayData, setViewingDayData] = useState<{ day: Date; todos: Todo[] } | null>(null);
+  const [viewingDayData, setViewingDayData] = useState<{ day: Date; todos: Todo[]; dayIndex: number } | null>(null);
 
   // When selectedTodo becomes null (e.g. closed), also reset selectedDayIndex
   useEffect(() => {
@@ -109,7 +109,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     }
   };
 
-  // Calculate anchored position for the popover right next to the selected day cell
+  // Calculate anchored position for the task detail popover right next to the selected day cell
   const getPopoverPositionStyle = (): React.CSSProperties => {
     if (selectedDayIndex === null) {
       return { display: "none" };
@@ -118,7 +118,33 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const colIndex = selectedDayIndex % 7; // 0 (Mon) to 6 (Sun)
     const rowIndex = Math.floor(selectedDayIndex / 7); // 0 to ~5
 
-    const topPx = rowIndex * 165 + 10;
+    const topPx = rowIndex >= 3 ? Math.max(10, rowIndex * 165 - 110) : rowIndex * 165 + 10;
+
+    if (colIndex <= 3) {
+      // Columns Mon - Thu: Place popover to the right of the cell
+      const leftPercent = ((colIndex + 1) / 7) * 100;
+      return {
+        position: "absolute",
+        top: `${topPx}px`,
+        left: `calc(${leftPercent}% + 8px)`,
+      };
+    } else {
+      // Columns Fri - Sun: Place popover to the left of the cell
+      const rightPercent = ((7 - colIndex) / 7) * 100;
+      return {
+        position: "absolute",
+        top: `${topPx}px`,
+        right: `calc(${rightPercent}% - 8px)`,
+      };
+    }
+  };
+
+  // Calculate anchored position for the day tasks list popover right next to the clicked day cell
+  const getDayPopoverPositionStyle = (dayIndex: number): React.CSSProperties => {
+    const colIndex = dayIndex % 7; // 0 (Mon) to 6 (Sun)
+    const rowIndex = Math.floor(dayIndex / 7); // 0 to ~5
+
+    const topPx = rowIndex >= 3 ? Math.max(10, rowIndex * 165 - 110) : rowIndex * 165 + 10;
 
     if (colIndex <= 3) {
       // Columns Mon - Thu: Place popover to the right of the cell
@@ -209,7 +235,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           {days.map((day, idx) => {
             const isSelectedMonth = isSameMonth(day, monthStart);
             const isCurrentDay = isToday(day);
-            const isDaySelected = selectedDayIndex === idx && !!selectedTodo;
+            const isDaySelected = (selectedDayIndex === idx && !!selectedTodo) || (viewingDayData?.dayIndex === idx);
 
             // Find tasks due or started on this day
             const dayTodos = todos.filter((todo) => {
@@ -234,7 +260,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     ? "bg-white/60 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md"
                     : "bg-slate-50/20 dark:bg-slate-950/20 border-slate-200/30 dark:border-slate-800/30 opacity-40"
                 } ${isCurrentDay ? "ring-2 ring-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/30" : ""} ${
-                  isDaySelected ? "ring-2 ring-orange-500/80 bg-orange-50/20 dark:bg-orange-950/20" : ""
+                  isDaySelected ? "ring-2 ring-indigo-500/80 bg-indigo-50/20 dark:bg-indigo-950/20" : ""
                 }`}
               >
                 {/* Day Header */}
@@ -257,6 +283,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       e.stopPropagation();
                       onCloseDetail();
                       setSelectedDayIndex(null);
+                      setViewingDayData(null);
                       onOpenNewTaskModal("TODO", day);
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
@@ -277,15 +304,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         key={todo.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedDayIndex(idx);
                           setViewingDayData(null);
+                          setSelectedDayIndex(idx);
                           onSelectTodo(todo);
                         }}
                         className={`w-full text-left px-2 py-1 rounded-xl text-xs font-semibold truncate block transition border ${getPriorityStyle(
                           todo.priority,
                           todo.status
                         )} cursor-pointer ${
-                          selectedTodo?.id === todo.id ? "ring-2 ring-orange-500 scale-[1.02]" : ""
+                          selectedTodo?.id === todo.id ? "ring-2 ring-indigo-500 scale-[1.02]" : ""
                         }`}
                         title={`${todo.title} - Bấm để xem chi tiết`}
                       >
@@ -309,7 +336,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setViewingDayData({ day, todos: dayTodos });
+                        onCloseDetail();
+                        setSelectedDayIndex(null);
+                        setViewingDayData({ day, todos: dayTodos, dayIndex: idx });
                       }}
                       className="w-full text-center py-1 px-1.5 rounded-lg text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition cursor-pointer border border-indigo-200/50 dark:border-indigo-800/40"
                     >
@@ -322,87 +351,102 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           })}
         </div>
 
-        {/* Floating Overlay Layer: Day Full Task List Popover */}
+        {/* Anchored Day Tasks Mini-Popover (No full-screen backdrop, pure local contextual popup) */}
         {viewingDayData && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
-          >
-            <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white capitalize">
-                    Danh Sách Việc {format(viewingDayData.day, "EEEE, dd/MM/yyyy", { locale: vi })}
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Tổng cộng {viewingDayData.todos.length} công việc trong ngày này
-                  </p>
+          <>
+            {/* Transparent click-catcher to dismiss when clicking outside */}
+            <div
+              className="fixed inset-0 z-20 cursor-default"
+              onClick={() => setViewingDayData(null)}
+            />
+
+            <div className="absolute inset-0 pointer-events-none z-30">
+              <div
+                className="pointer-events-auto w-72 sm:w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-2xl animate-fade-in space-y-3"
+                style={getDayPopoverPositionStyle(viewingDayData.dayIndex)}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">
+                      {format(viewingDayData.day, "EEEE, dd/MM", { locale: vi })}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      {viewingDayData.todos.length} công việc trong ngày
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setViewingDayData(null)}
+                    className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setViewingDayData(null)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
 
-              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-                {viewingDayData.todos.map((t) => {
-                  const isCompleted = t.status === "COMPLETED";
+                {/* Tasks List */}
+                <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1">
+                  {viewingDayData.todos.map((t) => {
+                    const isCompleted = t.status === "COMPLETED";
 
-                  return (
-                    <div
-                      key={t.id}
-                      onClick={() => {
-                        setViewingDayData(null);
-                        onSelectTodo(t);
-                      }}
-                      className={`p-2.5 rounded-xl border transition flex items-center justify-between gap-2 cursor-pointer ${
-                        isCompleted
-                          ? "bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-200/50"
-                          : "bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/80 hover:border-indigo-400"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {isCompleted ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        ) : (
-                          <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
-                        )}
-                        <span
-                          className={`text-xs font-bold truncate ${
-                            isCompleted
-                              ? "line-through text-slate-400 dark:text-slate-500"
-                              : "text-slate-900 dark:text-slate-100"
-                          }`}
-                        >
-                          {t.title}
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => {
+                          const clickedTodo = t;
+                          const currentIdx = viewingDayData.dayIndex;
+                          setViewingDayData(null);
+                          setSelectedDayIndex(currentIdx);
+                          onSelectTodo(clickedTodo);
+                        }}
+                        className={`p-2.5 rounded-xl border transition flex items-center justify-between gap-2 cursor-pointer group ${
+                          isCompleted
+                            ? "bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-200/50"
+                            : "bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/80 hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {isCompleted ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                          ) : (
+                            <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 group-hover:scale-125 transition" />
+                          )}
+                          <span
+                            className={`text-xs font-semibold truncate ${
+                              isCompleted
+                                ? "line-through text-slate-400 dark:text-slate-500"
+                                : "text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                            }`}
+                          >
+                            {t.title}
+                          </span>
+                        </div>
+
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
+                          {t.due_date ? format(parseISO(t.due_date), "HH:mm") : "--:--"}
                         </span>
                       </div>
+                    );
+                  })}
+                </div>
 
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 flex-shrink-0">
-                        {t.due_date ? format(parseISO(t.due_date), "HH:mm") : "--:--"}
-                      </span>
-                    </div>
-                  );
-                })}
+                {/* Add new task button for this specific day */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetDay = viewingDayData.day;
+                    setViewingDayData(null);
+                    onOpenNewTaskModal("TODO", targetDay);
+                  }}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm Việc Mới</span>
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const targetDay = viewingDayData.day;
-                  setViewingDayData(null);
-                  onOpenNewTaskModal("TODO", targetDay);
-                }}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Thêm Công Việc Mới Vào Ngày Này</span>
-              </button>
             </div>
-          </div>
+          </>
         )}
 
         {/* Floating Overlay Layer (Out of Grid Flow) for Anchored Detail Popover */}
@@ -436,3 +480,4 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     </div>
   );
 };
+
