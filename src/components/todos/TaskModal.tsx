@@ -48,6 +48,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isComposingRef = React.useRef(false);
 
   useEffect(() => {
     if (editingTodo) {
@@ -122,10 +123,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   if (!isOpen) return null;
 
   const handleAddSubtask = () => {
-    if (!newSubtaskTitle.trim()) return;
-    setSubtasks([...subtasks, { title: newSubtaskTitle.trim(), is_completed: false }]);
+    const trimmed = newSubtaskTitle.trim();
+    if (!trimmed) return;
+    setSubtasks((prev) => [...prev, { title: trimmed, is_completed: false }]);
     setNewSubtaskTitle("");
   };
+
 
   const handleRemoveSubtask = (index: number) => {
     setSubtasks(subtasks.filter((_, i) => i !== index));
@@ -404,8 +407,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 type="text"
                 value={newSubtaskTitle}
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                onCompositionStart={() => {
+                  isComposingRef.current = true;
+                }}
+                onCompositionEnd={() => {
+                  isComposingRef.current = false;
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
+                    if (isComposingRef.current || e.nativeEvent.isComposing || e.keyCode === 229) {
+                      return;
+                    }
                     e.preventDefault();
                     handleAddSubtask();
                   }
@@ -416,11 +428,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <button
                 type="button"
                 onClick={handleAddSubtask}
-                className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition"
+                className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition cursor-pointer"
               >
                 + Thêm
               </button>
             </div>
+
           </div>
 
           {/* Form Actions */}
