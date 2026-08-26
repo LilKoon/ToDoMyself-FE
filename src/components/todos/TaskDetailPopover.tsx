@@ -100,11 +100,11 @@ export const TaskDetailPopover: React.FC<TaskDetailPopoverProps> = ({
 
       {/* 3 Metrics Summary Cards (Compact & Refined) */}
       <div className="grid grid-cols-3 gap-2 my-3.5">
-        {/* Card 1: Giờ vào / Bắt đầu */}
+        {/* Card 1: Bắt đầu */}
         <div className="p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/50 flex flex-col justify-between">
           <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
             <Clock className="w-3 h-3" />
-            <span>Giờ vào</span>
+            <span>Bắt đầu</span>
           </div>
           <div className="my-1">
             <span className="text-sm font-black text-slate-900 dark:text-white">
@@ -119,21 +119,21 @@ export const TaskDetailPopover: React.FC<TaskDetailPopoverProps> = ({
           </p>
         </div>
 
-        {/* Card 2: Giờ ra / Hạn chót */}
+        {/* Card 2: Đến hạn */}
         <div
           className={`p-2.5 rounded-xl border flex flex-col justify-between ${
             isDueOverdue
               ? "bg-rose-50/70 dark:bg-rose-950/30 border-rose-200/70 dark:border-rose-800/50"
-              : "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/50"
+              : "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200/70 dark:border-indigo-800/50"
           }`}
         >
           <div
             className={`flex items-center gap-1 text-[10px] font-semibold ${
-              isDueOverdue ? "text-rose-700 dark:text-rose-300" : "text-emerald-700 dark:text-emerald-300"
+              isDueOverdue ? "text-rose-700 dark:text-rose-300" : "text-indigo-700 dark:text-indigo-300"
             }`}
           >
             <Calendar className="w-3 h-3" />
-            <span>Giờ ra</span>
+            <span>Đến hạn</span>
           </div>
           <div className="my-1">
             <span
@@ -147,7 +147,7 @@ export const TaskDetailPopover: React.FC<TaskDetailPopoverProps> = ({
               className={`ml-1 text-[9px] font-bold px-1 py-0.2 rounded ${
                 isDueOverdue
                   ? "bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300"
-                  : "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300"
+                  : "bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300"
               }`}
             >
               {todo.due_date ? (isDueOverdue ? "Quá hạn" : format(parseISO(todo.due_date), "dd/MM")) : "Không hạn"}
@@ -157,6 +157,7 @@ export const TaskDetailPopover: React.FC<TaskDetailPopoverProps> = ({
             {todo.reminder_time ? "Có nhắc email" : "Nhắc 1 ngày"}
           </p>
         </div>
+
 
         {/* Card 3: Trạng thái & Ưu tiên */}
         <div className="p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-800/50 flex flex-col justify-between">
