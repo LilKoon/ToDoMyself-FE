@@ -180,6 +180,10 @@ export const notificationApi = {
     });
     return res.data;
   },
+  sendTestDailyDigest: async (): Promise<{ message: string }> => {
+    const res = await api.post<{ message: string }>("/notifications/test-daily-digest");
+    return res.data;
+  },
 };
 
 export default api;

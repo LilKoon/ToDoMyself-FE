@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [isSendingDailyDigest, setIsSendingDailyDigest] = useState(false);
 
   const [toast, setToast] = useState<{ isOpen: boolean; message: string; type: ToastType }>({
     isOpen: false,
@@ -125,6 +126,21 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSendDailyDigest = async () => {
+    setIsSendingDailyDigest(true);
+    try {
+      const res = await notificationApi.sendTestDailyDigest();
+      showToast(res.message || "Email tổng hợp ngày (Daily Digest) đã được gửi thành công!", "success");
+      // Reload logs
+      const updatedLogs = await notificationApi.getLogs();
+      setLogs(updatedLogs);
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Lỗi khi gửi email tổng hợp ngày", "error");
+    } finally {
+      setIsSendingDailyDigest(false);
+    }
+  };
+
   const timezones = [
     { value: "Asia/Ho_Chi_Minh", label: "Việt Nam (GMT+7 - Asia/Ho_Chi_Minh)" },
     { value: "Asia/Bangkok", label: "Bangkok (GMT+7)" },
@@ -177,24 +193,47 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          {/* Test Email Button */}
-          <button
-            onClick={handleSendTestEmail}
-            disabled={isSendingTest}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition disabled:opacity-50 cursor-pointer"
-          >
-            {isSendingTest ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Đang gửi mail...</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                <span>Gửi Thử Email Ngay</span>
-              </>
-            )}
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Test Email Button */}
+            <button
+              type="button"
+              onClick={handleSendTestEmail}
+              disabled={isSendingTest}
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition disabled:opacity-50 cursor-pointer"
+            >
+              {isSendingTest ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Đang gửi...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Test Email</span>
+                </>
+              )}
+            </button>
+
+            {/* Test Daily Digest Button */}
+            <button
+              type="button"
+              onClick={handleSendDailyDigest}
+              disabled={isSendingDailyDigest}
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition disabled:opacity-50 cursor-pointer"
+            >
+              {isSendingDailyDigest ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Đang gửi Digest...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Thử Gửi Daily Digest</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSaveSettings} className="space-y-8">
