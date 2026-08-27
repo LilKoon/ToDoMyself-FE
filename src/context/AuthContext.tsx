@@ -22,6 +22,7 @@ interface AuthContextType {
   logout: () => void;
   refreshUser: () => Promise<void>;
   closePasswordSetupModal: () => void;
+  magicLogin: (token: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -205,6 +206,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const magicLogin = async (token: string) => {
+    setIsLoading(true);
+    try {
+      const res = await authApi.magicLogin(token);
+      if (res.access_token && res.user) {
+        localStorage.setItem("todo_access_token", res.access_token);
+        if (res.refresh_token) {
+          localStorage.setItem("todo_refresh_token", res.refresh_token);
+        }
+        setUser(res.user);
+        setIsLoading(false);
+        return res;
+      }
+      setIsLoading(false);
+      return res;
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -224,6 +246,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         refreshUser,
         closePasswordSetupModal,
+        magicLogin,
       }}
     >
       {children}

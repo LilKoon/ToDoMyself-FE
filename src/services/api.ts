@@ -100,6 +100,10 @@ export const authApi = {
     const res = await api.post<AuthResponse>("/auth/set-password", { password, setup_token });
     return res.data;
   },
+  magicLogin: async (token: string): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>("/auth/magic-login", { token });
+    return res.data;
+  },
   getMe: async (): Promise<User> => {
     const res = await api.get<User>("/auth/me");
     return res.data;
