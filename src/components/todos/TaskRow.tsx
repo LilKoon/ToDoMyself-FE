@@ -102,15 +102,15 @@ export const TaskRow: React.FC<TaskRowProps> = ({
       {/* Main Clickable Row Header */}
       <div
         onClick={onToggleExpand}
-        className="px-4 py-3.5 flex items-center justify-between gap-3 cursor-pointer select-none"
+        className="px-3.5 py-3 sm:px-4 sm:py-3.5 flex items-start sm:items-center justify-between gap-3 cursor-pointer select-none"
       >
-        {/* Left: Checkbox + Priority + Title + Category */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        {/* Left: Checkbox + Content (Title on Line 1, Meta Chips on Line 2 for Mobile) */}
+        <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
           {/* Checkbox */}
           <button
             type="button"
             onClick={handleToggleComplete}
-            className={`p-1 rounded-lg transition flex-shrink-0 cursor-pointer ${
+            className={`p-1 rounded-lg transition flex-shrink-0 cursor-pointer mt-0.5 sm:mt-0 ${
               isCompleted
                 ? "text-emerald-500 hover:text-emerald-600"
                 : "text-slate-400 hover:text-indigo-600"
@@ -124,33 +124,82 @@ export const TaskRow: React.FC<TaskRowProps> = ({
             )}
           </button>
 
-          {/* Priority Badge */}
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider flex-shrink-0 ${
-              priorityStyles[todo.priority]?.badge
-            }`}
-          >
-            {priorityStyles[todo.priority]?.label}
-          </span>
+          {/* Content Container */}
+          <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            {/* TIER 1 (Desktop Inline / Mobile Top): Priority + Category + Title */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              {/* Priority Badge on Desktop */}
+              <span
+                className={`hidden sm:inline-block text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider flex-shrink-0 ${
+                  priorityStyles[todo.priority]?.badge
+                }`}
+              >
+                {priorityStyles[todo.priority]?.label}
+              </span>
 
-          {/* Category Pill */}
-          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex-shrink-0">
-            📁 {todo.category}
-          </span>
+              {/* Category Pill on Desktop */}
+              <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex-shrink-0">
+                📁 {todo.category}
+              </span>
 
-          {/* Task Title */}
-          <span
-            className={`text-sm font-bold text-slate-900 dark:text-white truncate flex-1 tracking-tight ${
-              isCompleted ? "line-through text-slate-400 dark:text-slate-500 font-medium" : ""
-            }`}
-          >
-            {todo.title}
-          </span>
+              {/* Task Title (Takes 100% width on mobile, full text visible) */}
+              <span
+                className={`text-sm font-bold text-slate-900 dark:text-white tracking-tight break-words sm:truncate flex-1 ${
+                  isCompleted ? "line-through text-slate-400 dark:text-slate-500 font-medium" : ""
+                }`}
+              >
+                {todo.title}
+              </span>
+            </div>
+
+            {/* TIER 2: Mobile Sub-line Meta Chips (Visible only on < sm mobile screens) */}
+            <div className="flex sm:hidden items-center gap-1.5 flex-wrap pt-0.5">
+              {/* Priority Badge on Mobile */}
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                  priorityStyles[todo.priority]?.badge
+                }`}
+              >
+                {priorityStyles[todo.priority]?.label}
+              </span>
+
+              {/* Category Tag on Mobile */}
+              <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400">
+                📁 {todo.category}
+              </span>
+
+              {/* Due Date Chip on Mobile */}
+              {dueDateText && (
+                <div
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                    isOverdue
+                      ? "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
+                      : isCompleted
+                      ? "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                      : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
+                  }`}
+                >
+                  {isOverdue ? <AlertTriangle className="w-2.5 h-2.5 text-rose-500" /> : <Clock className="w-2.5 h-2.5" />}
+                  <span>{dueDateText}</span>
+                </div>
+              )}
+
+              {/* Subtask count on Mobile */}
+              {totalSubtasks > 0 && (
+                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-semibold">
+                  <ListCheck className="w-2.5 h-2.5 text-indigo-500" />
+                  <span>
+                    {completedSubtasks}/{totalSubtasks}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right: Subtasks + Dates + Chevron */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Subtask count pill */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 mt-0.5 sm:mt-0">
+          {/* Subtask count pill on Desktop */}
           {totalSubtasks > 0 && (
             <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold">
               <ListCheck className="w-3.5 h-3.5 text-indigo-500" />
@@ -160,10 +209,10 @@ export const TaskRow: React.FC<TaskRowProps> = ({
             </div>
           )}
 
-          {/* Due Date Chip */}
+          {/* Due Date Chip on Desktop */}
           {dueDateText ? (
             <div
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold ${
+              className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold ${
                 isOverdue
                   ? "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
                   : isCompleted
@@ -189,8 +238,23 @@ export const TaskRow: React.FC<TaskRowProps> = ({
       {isExpanded && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="px-5 pb-5 pt-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 space-y-4 animate-fade-in"
+          className="px-4 pb-5 pt-3 sm:px-5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 space-y-3.5 animate-fade-in"
         >
+          {/* Expanded Task Title Header on Mobile */}
+          <div className="sm:hidden p-3 rounded-xl bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${priorityStyles[todo.priority]?.badge}`}>
+                {priorityStyles[todo.priority]?.label}
+              </span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                📁 {todo.category}
+              </span>
+            </div>
+            <h3 className={`text-sm font-bold text-slate-900 dark:text-white leading-snug break-words ${isCompleted ? "line-through text-slate-400 dark:text-slate-500" : ""}`}>
+              {todo.title}
+            </h3>
+          </div>
+
           {/* Description */}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
